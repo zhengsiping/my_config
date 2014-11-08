@@ -1,0 +1,190 @@
+" autocmd VimEnter,VimLeave * silent !tmux set status
+let g:ctrlp_match_window = 'results:100'
+set runtimepath^=~/.vim/bundle/ctrlp.vim  
+set nu
+set expandtab
+set tabstop=2
+set shiftwidth=2
+set smartindent
+set autoindent
+set tag+=/wayfair/home/szheng/src/php/.tags/phptags
+nnoremap <C-Left> :tabprevious<CR>
+nnoremap <C-Right> :tabnext<CR>
+inoremap <C-Left> <ESC>:tabprevious<CR>
+inoremap <C-Right> <ESC>:tabnext<CR>
+nnoremap <C-h> :tabprevious<CR>
+nnoremap <C-l> :tabnext<CR>
+inoremap <C-h> <ESC>:tabprevious<CR>
+inoremap <C-l> <ESC>:tabnext<CR>
+nnoremap K <NOP>
+nnoremap J <NOP>
+nnoremap <silent> <A-Left> :execute 'silent! tabmove ' . (tabpagenr()-2)<CR>
+nnoremap <silent> <A-Right> :execute 'silent! tabmove ' . tabpagenr()<CR>
+nnoremap <A-w> <C-W><C-W>
+nnoremap x "_x
+vnoremap x "_x
+vnoremap p "_xhp
+filetype plugin on
+au FileType php setl ofu=phpcomplete#CompletePHP
+au FileType ruby,eruby setl ofu=rubycomplete#Complete
+au FileType html,xhtml setl ofu=htmlcomplete#CompleteTags
+au FileType c setl ofu=ccomplete#CompleteCpp
+au FileType css setl ofu=csscomplete#CompleteCSS
+set showcmd
+execute pathogen#infect()
+syntax on
+syntax enable
+set background=dark
+set t_Co=256
+filetype plugin indent on
+colorscheme jellybeans
+" colorscheme grb256
+" colorscheme slate
+" colorscheme solarized
+noremap <F8> :TagbarToggle<CR>
+noremap <F7> :NERDTreeToggle<CR>
+"nnoremap <A-s> :update<CR>
+"inoremap <A-s> 
+"vnoremap <A-s> <C-c>:update<CR>
+set ignorecase
+set incsearch
+let g:indentLine_color_term = 235
+let tlist_php_settings = 'php;c:class;f:function'
+nnoremap <C-n> :tabe 
+inoremap jk <ESC>
+inoremap JK <ESC>
+"Scroll bar
+set laststatus=2
+func! STL()
+  let stl = expand('%:t').'  % [%{(&fenc==""?&enc:&fenc).((exists("+bomb") && &bomb)?",B":"")}%M%R%H%W] %y [%l/%L,%v] [%p%%]'
+  let barWidth = &columns - 65 " <-- wild guess
+  let barWidth = barWidth < 3 ? 3 : barWidth
+
+  if line('$') > 1
+    let progress = (line('.')-1) * (barWidth-1) / (line('$')-1)
+  else
+    let progress = barWidth/2
+  endif
+
+  " line + vcol + %
+  let pad = strlen(line('$'))-strlen(line('.'))  + 3 - strlen(virtcol('.')) + 3 - strlen(line('.'))*100/line('$')
+  let bar = repeat('',pad).' [%1*%'.barWidth.'.'.barWidth.'('
+        \.repeat('-',progress)
+        \.'%2*0%1*'
+        \.repeat('-',barWidth - progress - 1).'%0*%)%<]'
+
+  return stl.bar
+endfun
+
+hi def link User1 DiffAdd
+hi def link User2 DiffDelete
+set stl=%!STL()
+"End of Scroll bar
+inoremap ;; <esc>$a;<esc>
+inoremap ,, <esc>$a,
+function! Super_jump(forward) 
+  if a:forward
+    let s:regex = '[\)\]\}\"' . "\']"
+    call search(s:regex)
+  else
+    let s:regex = '[\(\{\[\"' . "\']"
+    call search(s:regex, 'b')
+  endif
+endfunction 
+inoremap <C-k> <esc>:call Super_jump(1)<CR>a
+inoremap <C-j> <esc>:call Super_jump(0)<CR>i
+" GGREP
+function! Siping_test(str)
+  let s:cmd = 'git branch'
+  let s:res = system(s:cmd)
+  let s:branch = matchstr(s:res, '\*\s\zs\i\+', 0, 1)
+  let s:branch = s:branch
+  call setline(line('.'), s:branch)
+  let s:cmd = 'git grep -e "' . a:str . '" ' . s:branch
+  let s:res = system(s:cmd)
+  " let s:alist = split(s:res, s:branch . ':')
+  let s:linenumber = 2 
+  " for item in s:alist 
+  "   call setline(s:linenumber, item)
+  "   let s:linenumber = s:linenumber + 1
+  " endfor
+  let s:glist = Get_ggrep_list(s:res)
+  for item in s:glist
+    call setline(s:linenumber, item['content'])
+    let s:linenumber = s:linenumber + 1
+  endfor
+  nnoremap <buffer> <CR> :call Parseline()<CR>
+endfunction
+function! Get_ggrep_list (str)
+  let s:alist = split(a:str, ':')
+  let s:branch = s:alist[0]
+  let s:alist = split(s:str, s:branch . ':')
+  let s:glist = []
+  for item in s:alist
+    let s:elems = split(item, ':')  
+    let s:elems_dir = {
+    \ 'file' : s:elems[0],
+    \ 'line' : s:elems[1],
+    \ 'content' : s:elems[2]
+    \} 
+    let s:glist += [s:elems_dir]
+  endfor
+  return s:glist
+endfunction
+function! Parseline()
+  if line('.') == 1 
+    return 0
+  endif
+  exe 'wincmd k'
+  exe 'wincmd q'
+  let s:curlinenumebr = line('.')
+  let s:str = getline(s:curlinenumebr)
+  let s:alist = split(s:str, ':')
+  let s:filename = s:alist[0] 
+  let s:linenumebr = s:alist[1]
+  let s:cmd = 'split ' . s:filename
+  exe s:cmd
+  exe s:linenumebr
+  exe 'wincmd j' 
+endfunction
+function! ToggleGGREP()
+  exe 'tabe GGREPTEMP.php' 
+  call setline(1, '<?php')
+  exe 'split GGREPTEMP_WIN.php'
+  exe 'wincmd j'
+endfunction
+nnoremap <F4> :call ToggleGGREP()<CR> 
+"End of GGREP
+function! Testtest () 
+endfunction
+" function! SimpleSnippets(prefix)
+"   let s:linenumber = line('.')
+"   if a:prefix == 'if'
+"     call setline(s:linenumber, 'if (SUJU) {')
+"     call setline(s:linenumber+1, 'SUJU')
+"     call setline(s:linenumber+2, '}')
+"     normal vjj=
+"   endif
+" endfunction
+" inoremap if<space><tab> <esc>:call SimpleSnippets('if')<CR>
+let g:tagbar_type_php = {
+    \ 'kinds' : [
+        \ 'i:interfaces',
+        \ 'c:classes',
+        \ 'd:constant definitions:0:0',
+        \ 'f:functions',
+    \ ],
+    \ 'deffile' : '~/ctags/php.cnf'
+\ }
+" augroup vimrc
+"     au BufReadPre * setlocal foldmethod=indent
+"     au BufWinEnter * if &fdm == 'indent' | setlocal foldmethod=manual | endif
+" augroup END
+" autocmd BufWinLeave *.* mkview
+" autocmd BufWinEnter *.* silent loadview 
+" autocmd BufWinEnter *.* silent mkview 
+command! -n=? -complete=dir -bar SnippetBaseToggle :call SnippetBaseToggle()
+function! SnippetBaseToggle()
+  " exe 'belowright new'
+  exe ':NERDTree ~/.vim/bundle/ctrlp.vim/snippets/'
+endfunction
