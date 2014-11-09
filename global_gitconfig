@@ -7,12 +7,6 @@
 	ignorecase = true
 	hideDotFiles = dotGitOnly
 	autocrlf = false
-[remote "origin"]
-	url = git@git.csnzoo.com:wayfair/php.git
-	fetch = +refs/heads/*:refs/remotes/origin/*
-[branch "clm-sprint1"]
-	remote = origin
-	merge = refs/heads/clm-sprint1
 [alias]
   st    = status -sb
   stats = show --stat
@@ -57,9 +51,3 @@
 
   # current status and recent log
   wat = !"git st && echo '' && git lgbh"
-[branch "Customer_Account_Management"]
-	remote = origin
-	merge = refs/heads/Customer_Account_Management
-[branch "master"]
-	remote = origin
-	merge = refs/heads/master
